@@ -4,7 +4,10 @@ import Input from "@/app/components/inputs/Input";
 import { FC, useCallback, useState } from "react";
 import { FieldValues, SubmitHandler, useForm } from "react-hook-form";
 import AuthSocialButton from "./AuthSocialButton";
-import {BsGithub , BsGoogle} from 'react-icons/bs'
+import {BsGithub , BsGoogle} from 'react-icons/bs';
+import axios from "axios";
+import toast from "react-hot-toast";
+import { signIn } from "next-auth/react";
 
 interface AuthFormProps {}
 
@@ -37,18 +40,48 @@ const AuthForm: FC<AuthFormProps> = ({}) => {
     setIsLoading(true)
     if(variant==='REGISTER')
     {
-        // Register
+      axios.post('/api/register' , data)
+      .catch(()=>{
+        toast.error('Something went wrong!')
+      })
+      .finally(()=>{
+        toast.success("Register Success!")
+        setIsLoading(false)
+      })
     }
     else 
     {
-        // Login
+      signIn('credentials',{
+        ...data,
+        redirect:false
+      }).then((callback) =>{
+        if(callback?.error) {
+          toast.error('Invalid credentials')
+        }
+        if(callback?.ok && !callback?.error) {
+          toast.success('Logged In!')
+        }
+      }).finally(()=>{
+        setIsLoading(false)
+      })
     }
   }
 
 
   const SocialAction = (action : string) => {
     setIsLoading(true)
-    //next auth social sign in
+    
+    signIn(action , {redirect:false})
+    .then((callback) =>{
+      if(callback?.error) {
+        toast.error('Invalid credentials')
+      }
+      if(callback?.ok && !callback?.error) {
+        toast.success('Logged In!')
+      }
+    }).finally(()=>{
+      setIsLoading(false)
+    })
   }
 
   return (
@@ -65,7 +98,7 @@ const AuthForm: FC<AuthFormProps> = ({}) => {
                   )
               }
               <Input id="email" lable="Email address" type="email" register={register} errors={errors} disabled={isLoading}/> 
-              <Input id="passowrd" lable="Password" type="password" register={register} errors={errors} disabled={isLoading}/> 
+              <Input id="password" lable="Password" type="password" register={register} errors={errors} disabled={isLoading}/> 
               <div>
                 <Button
                   disabled={isLoading}
